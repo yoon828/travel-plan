@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -42,6 +43,7 @@ interface CreateTripModalProps {
 }
 
 function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [title, setTitle] = useState('')
@@ -76,7 +78,10 @@ function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
         setError(result.error)
       } else {
         onClose()
-        window.location.reload()
+        setTitle('')
+        setDateRange(undefined)
+        router.refresh()
+        router.push(`/trips/${result.trip?.id}`)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다')

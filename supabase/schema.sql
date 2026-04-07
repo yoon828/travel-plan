@@ -7,7 +7,6 @@
 create table trips (
   id uuid primary key default gen_random_uuid(),
   title text not null,
-  destination text,
   start_date date not null,
   end_date date not null,
   created_at timestamptz default now()

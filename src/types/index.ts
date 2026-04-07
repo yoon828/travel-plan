@@ -2,7 +2,6 @@ export interface Trip {
   id: string
   created_at: string
   title: string
-  destination: string | null
   start_date: string
   end_date: string
 }
