@@ -7,7 +7,7 @@ import { ko } from 'date-fns/locale'
 import { CreateTripButton } from '@/components/trip/CreateTripForm'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { createBrowserClient } from '@/lib/supabase'
+import { createBrowserClient } from '@/lib/supabase.client'
 import type { Trip } from '@/types'
 import { cn } from '@/lib/utils'
 
