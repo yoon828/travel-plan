@@ -20,6 +20,15 @@ export interface Day {
   date: string
 }
 
+export type PlaceCategory = 'restaurant' | 'cafe' | 'attraction' | 'accommodation' | 'airport'
+
+export interface AutocompletePlaceResult {
+  name: string
+  address: string
+  lat: number | null
+  lng: number | null
+}
+
 export interface Place {
   id: string
   created_at: string
@@ -32,6 +41,7 @@ export interface Place {
   memo: string | null
   ticket_url: string | null
   open_hours: string | null
+  category: PlaceCategory | null
 }
 
 export type TransportMode = 'transit' | 'driving' | 'walking' | 'train'

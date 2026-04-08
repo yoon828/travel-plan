@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 
 export default function Sidebar() {
   const [trips, setTrips] = useState<Trip[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   const router = useRouter()
   const pathname = usePathname()
 

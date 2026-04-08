@@ -40,6 +40,7 @@ create table places (
   memo text,
   ticket_url text,
   open_hours text,
+  category text check (category in ('restaurant', 'cafe', 'attraction', 'accommodation', 'airport')),
   created_at timestamptz default now()
 );
 

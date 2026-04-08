@@ -1,7 +1,7 @@
 'use server'
 
 import { createServerClient } from '@/lib/supabase'
-import type { Trip, Day, Place } from '@/types'
+import type { Trip, Day, Place, PlaceCategory } from '@/types'
 
 export async function createTrip({
   title,
@@ -83,6 +83,7 @@ export async function addPlace({
   memo,
   lat,
   lng,
+  category,
 }: {
   dayId: string
   name: string
@@ -90,6 +91,7 @@ export async function addPlace({
   memo?: string
   lat?: number
   lng?: number
+  category?: PlaceCategory
 }): Promise<{ place?: Place; error?: string }> {
   try {
     const supabase = await createServerClient()
@@ -113,6 +115,7 @@ export async function addPlace({
           memo: memo || null,
           lat: lat || null,
           lng: lng || null,
+          category: category || null,
           order_index: nextOrderIndex,
         },
       ])
