@@ -132,6 +132,50 @@ export async function addPlace({
   }
 }
 
+export async function updatePlace({
+  placeId,
+  name,
+  address,
+  memo,
+  lat,
+  lng,
+  category,
+}: {
+  placeId: string
+  name: string
+  address?: string
+  memo?: string
+  lat?: number
+  lng?: number
+  category?: PlaceCategory
+}): Promise<{ place?: Place; error?: string }> {
+  try {
+    const supabase = await createServerClient()
+
+    const { data, error } = await supabase
+      .from('places')
+      .update({
+        name,
+        address: address || null,
+        memo: memo || null,
+        lat: lat || null,
+        lng: lng || null,
+        category: category || null,
+      })
+      .eq('id', placeId)
+      .select()
+      .single()
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { place: data }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
 export async function deletePlace(placeId: string): Promise<{ success?: boolean; error?: string }> {
   try {
     const supabase = await createServerClient()
