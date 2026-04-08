@@ -147,6 +147,8 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
 
     if (result.success) {
       setTrip({ ...trip, members: trip.members.filter((m) => m.id !== memberId) })
+    }else if (result.error) {
+      setMemberError(result.error)
     }
     setIsLoading(false)
   }
@@ -193,8 +195,8 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
             )}
 
             {/* 멤버 추가 폼 */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
+            <div className="space-y-2">
+              <div className="flex gap-2">
                 <Input
                   placeholder="새 멤버 닉네임"
                   value={memberInput}
@@ -205,18 +207,18 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
                   onKeyDown={handleMemberKeyDown}
                   disabled={isLoading}
                 />
-                {memberError && (
-                  <p className="text-sm text-destructive mt-1">{memberError}</p>
-                )}
+                <Button
+                  size="sm"
+                  onClick={handleAddMember}
+                  disabled={isLoading || !memberInput.trim()}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  추가
+                </Button>
               </div>
-              <Button
-                size="sm"
-                onClick={handleAddMember}
-                disabled={isLoading || !memberInput.trim()}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                추가
-              </Button>
+              {memberError && (
+                <p className="text-sm text-destructive">{memberError}</p>
+              )}
             </div>
           </div>
         </div>
