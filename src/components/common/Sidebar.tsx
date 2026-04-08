@@ -36,7 +36,7 @@ export default function Sidebar() {
     }
 
     fetchTrips()
-  }, [])
+  }, [pathname])
 
   const handleTripClick = (tripId: string) => {
     router.push(`/trips/${tripId}`)
