@@ -7,13 +7,11 @@ export async function createTrip({
   title,
   startDate,
   endDate,
-  members,
 }: {
   title: string
   startDate: string
   endDate: string
-  members?: string[]
-}): Promise<{ trip?: Trip; members?: Member[]; error?: string }> {
+}): Promise<{ trip?: Trip; error?: string }> {
   try {
     const supabase = await createServerClient()
 
@@ -50,27 +48,7 @@ export async function createTrip({
       return { error: daysError.message }
     }
 
-    // 멤버 등록 (선택 사항)
-    let insertedMembers: Member[] = []
-    if (members && members.length > 0) {
-      const membersData = members.map((nickname) => ({
-        trip_id: data.id,
-        nickname,
-      }))
-
-      const { data: membersResult, error: membersError } = await supabase
-        .from('members')
-        .insert(membersData)
-        .select()
-
-      if (membersError) {
-        return { error: membersError.message }
-      }
-
-      insertedMembers = membersResult || []
-    }
-
-    return { trip: data, members: insertedMembers }
+    return { trip: data }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Unknown error' }
   }
@@ -243,6 +221,70 @@ export async function deleteTrip(tripId: string): Promise<{ success?: boolean; e
       .from('trips')
       .delete()
       .eq('id', tripId)
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export async function addMember({
+  tripId,
+  nickname,
+}: {
+  tripId: string
+  nickname: string
+}): Promise<{ member?: Member; error?: string }> {
+  try {
+    const supabase = await createServerClient()
+    const trimmedNickname = nickname.trim()
+
+    // 중복 멤버 확인
+    const { data: existingMembers, error: checkError } = await supabase
+      .from('members')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('nickname', trimmedNickname)
+
+    if (checkError) {
+      return { error: checkError.message }
+    }
+
+    if (existingMembers && existingMembers.length > 0) {
+      return { error: '이미 추가된 멤버입니다' }
+    }
+
+    // 멤버 추가
+    const { data, error } = await supabase
+      .from('members')
+      .insert([
+        {
+          trip_id: tripId,
+          nickname: trimmedNickname,
+        },
+      ])
+      .select()
+      .single()
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { member: data }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export async function removeMember(memberId: string): Promise<{ success?: boolean; error?: string }> {
+  try {
+    const supabase = await createServerClient()
+
+    const { error } = await supabase.from('members').delete().eq('id', memberId)
 
     if (error) {
       return { error: error.message }

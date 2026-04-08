@@ -16,8 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ChevronUp, ChevronDown, Trash2, Plus, Pencil } from 'lucide-react'
-import { deletePlace, reorderPlaces, deleteTrip } from '@/app/actions'
+import { ChevronUp, ChevronDown, Trash2, Plus, Pencil, X } from 'lucide-react'
+import { deletePlace, reorderPlaces, deleteTrip, addMember, removeMember } from '@/app/actions'
+import { Input } from '@/components/ui/input'
 import type { Trip, Day, Place, Member } from '@/types'
 import { PLACE_CATEGORIES, GOOGLE_MAPS_API_KEY } from '@/lib/googleMaps'
 import { AddPlaceForm } from './AddPlaceForm'
@@ -34,6 +35,8 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
   const [editingPlace, setEditingPlace] = useState<Place | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false)
+  const [memberInput, setMemberInput] = useState<string>('')
+  const [memberError, setMemberError] = useState<string | null>(null)
 
   const startDate = new Date(trip.start_date)
   const endDate = new Date(trip.end_date)
@@ -112,6 +115,49 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
     setIsLoading(false)
   }
 
+  const handleAddMember = async () => {
+    const trimmed = memberInput.trim()
+    if (!trimmed) return
+
+    // 클라이언트에서 중복 검사
+    if (trip.members.some((m) => m.nickname === trimmed)) {
+      setMemberError('이미 추가된 멤버입니다')
+      return
+    }
+
+    setIsLoading(true)
+    const result = await addMember({
+      tripId: trip.id,
+      nickname: trimmed,
+    })
+
+    if (result.member) {
+      setTrip({ ...trip, members: [...trip.members, result.member] })
+      setMemberInput('')
+      setMemberError(null)
+    } else if (result.error) {
+      setMemberError(result.error)
+    }
+    setIsLoading(false)
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    setIsLoading(true)
+    const result = await removeMember(memberId)
+
+    if (result.success) {
+      setTrip({ ...trip, members: trip.members.filter((m) => m.id !== memberId) })
+    }
+    setIsLoading(false)
+  }
+
+  const handleMemberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddMember()
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* 헤더: 여행 제목과 날짜 */}
@@ -122,15 +168,57 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
             {format(startDate, 'yyyy.MM.dd', { locale: ko })} ~{' '}
             {format(endDate, 'yyyy.MM.dd', { locale: ko })} ({tripDays}일)
           </p>
-          {trip.members && trip.members.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {trip.members.map((member) => (
-                <Badge key={member.id} variant="outline">
-                  {member.nickname}
-                </Badge>
-              ))}
+          {/* 멤버 섹션 */}
+          <div className="mt-4 space-y-3">
+            {/* 멤버 목록 */}
+            {trip.members && trip.members.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {trip.members.map((member) => (
+                  <Badge
+                    key={member.id}
+                    variant="outline"
+                    className="flex items-center gap-1 cursor-pointer hover:bg-destructive/10"
+                  >
+                    {member.nickname}
+                    <button
+                      onClick={() => handleRemoveMember(member.id)}
+                      disabled={isLoading}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* 멤버 추가 폼 */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Input
+                  placeholder="새 멤버 닉네임"
+                  value={memberInput}
+                  onChange={(e) => {
+                    setMemberInput(e.target.value)
+                    setMemberError(null)
+                  }}
+                  onKeyDown={handleMemberKeyDown}
+                  disabled={isLoading}
+                />
+                {memberError && (
+                  <p className="text-sm text-destructive mt-1">{memberError}</p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                onClick={handleAddMember}
+                disabled={isLoading || !memberInput.trim()}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                추가
+              </Button>
             </div>
-          )}
+          </div>
         </div>
         <Button
           variant="destructive"
