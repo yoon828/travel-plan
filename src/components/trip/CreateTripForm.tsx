@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, X } from 'lucide-react'
 import { createTrip } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,33 @@ function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
   const [error, setError] = useState<string | null>(null)
   const [title, setTitle] = useState<string>('')
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [members, setMembers] = useState<string[]>([])
+  const [memberInput, setMemberInput] = useState<string>('')
+
+  const handleAddMember = () => {
+    const trimmed = memberInput.trim()
+    if (!trimmed) return
+
+    if (members.includes(trimmed)) {
+      setError('이미 추가된 멤버입니다')
+      return
+    }
+
+    setMembers([...members, trimmed])
+    setMemberInput('')
+    setError(null)
+  }
+
+  const handleRemoveMember = (index: number) => {
+    setMembers(members.filter((_, i) => i !== index))
+  }
+
+  const handleMemberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddMember()
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,6 +100,7 @@ function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
         title,
         startDate: format(dateRange.from, 'yyyy-MM-dd'),
         endDate: format(dateRange.to, 'yyyy-MM-dd'),
+        members: members.length > 0 ? members : undefined,
       })
 
       if (result.error) {
@@ -80,6 +109,8 @@ function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
         onClose()
         setTitle('')
         setDateRange(undefined)
+        setMembers([])
+        setMemberInput('')
         router.refresh()
         router.push(`/trips/${result.trip?.id}`)
       }
@@ -143,6 +174,46 @@ function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="member">멤버 등록 (선택)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="member"
+                type="text"
+                value={memberInput}
+                onChange={(e) => setMemberInput(e.target.value)}
+                onKeyDown={handleMemberKeyDown}
+                placeholder="닉네임을 입력하고 Enter 또는 추가 클릭"
+                disabled={isLoading}
+              />
+              <Button
+                type="button"
+                onClick={handleAddMember}
+                disabled={isLoading || !memberInput.trim()}
+                variant="outline"
+              >
+                추가
+              </Button>
+            </div>
+            {members.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {members.map((member, index) => (
+                  <Badge key={index} variant="secondary" className="pl-3">
+                    {member}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(index)}
+                      className="ml-2 hover:opacity-70"
+                      disabled={isLoading}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           {error && (

@@ -18,17 +18,17 @@ import {
 } from '@/components/ui/dialog'
 import { ChevronUp, ChevronDown, Trash2, Plus, Pencil } from 'lucide-react'
 import { deletePlace, reorderPlaces, deleteTrip } from '@/app/actions'
-import type { Trip, Day, Place } from '@/types'
+import type { Trip, Day, Place, Member } from '@/types'
 import { PLACE_CATEGORIES, GOOGLE_MAPS_API_KEY } from '@/lib/googleMaps'
 import { AddPlaceForm } from './AddPlaceForm'
 
 interface TripDetailProps {
-  trip: Trip & { days: (Day & { places: Place[] })[] }
+  trip: Trip & { days: (Day & { places: Place[] })[]; members: Member[] }
 }
 
 function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
   const router = useRouter()
-  const [trip, setTrip] = useState<Trip & { days: (Day & { places: Place[] })[] }>(initialTrip)
+  const [trip, setTrip] = useState<Trip & { days: (Day & { places: Place[] })[]; members: Member[] }>(initialTrip)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0)
   const [showAddForm, setShowAddForm] = useState<boolean>(false)
   const [editingPlace, setEditingPlace] = useState<Place | null>(null)
@@ -122,6 +122,15 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
             {format(startDate, 'yyyy.MM.dd', { locale: ko })} ~{' '}
             {format(endDate, 'yyyy.MM.dd', { locale: ko })} ({tripDays}일)
           </p>
+          {trip.members && trip.members.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {trip.members.map((member) => (
+                <Badge key={member.id} variant="outline">
+                  {member.nickname}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
         <Button
           variant="destructive"

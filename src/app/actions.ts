@@ -1,17 +1,19 @@
 'use server'
 
 import { createServerClient } from '@/lib/supabase'
-import type { Trip, Day, Place, PlaceCategory } from '@/types'
+import type { Trip, Day, Place, PlaceCategory, Member } from '@/types'
 
 export async function createTrip({
   title,
   startDate,
   endDate,
+  members,
 }: {
   title: string
   startDate: string
   endDate: string
-}): Promise<{ trip?: Trip; error?: string }> {
+  members?: string[]
+}): Promise<{ trip?: Trip; members?: Member[]; error?: string }> {
   try {
     const supabase = await createServerClient()
 
@@ -48,7 +50,27 @@ export async function createTrip({
       return { error: daysError.message }
     }
 
-    return { trip: data }
+    // 멤버 등록 (선택 사항)
+    let insertedMembers: Member[] = []
+    if (members && members.length > 0) {
+      const membersData = members.map((nickname) => ({
+        trip_id: data.id,
+        nickname,
+      }))
+
+      const { data: membersResult, error: membersError } = await supabase
+        .from('members')
+        .insert(membersData)
+        .select()
+
+      if (membersError) {
+        return { error: membersError.message }
+      }
+
+      insertedMembers = membersResult || []
+    }
+
+    return { trip: data, members: insertedMembers }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Unknown error' }
   }
@@ -56,13 +78,13 @@ export async function createTrip({
 
 export async function getTrip(
   id: string
-): Promise<{ trip?: Trip & { days: (Day & { places: Place[] })[] }; error?: string }> {
+): Promise<{ trip?: Trip & { days: (Day & { places: Place[] })[]; members: Member[] }; error?: string }> {
   try {
     const supabase = await createServerClient()
 
     const { data, error } = await supabase
       .from('trips')
-      .select('*, days(*, places(*))')
+      .select('*, days(*, places(*)), members(*)')
       .eq('id', id)
       .single()
 
