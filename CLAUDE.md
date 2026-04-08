@@ -214,6 +214,33 @@ create table expenses (
 
 ---
 
+## 브랜치 전략 (GitHub Flow)
+
+```
+main                        ← 배포 브랜치 (항상 배포 가능 상태 유지)
+├── feature/trip-form       ← 기능 개발
+├── fix/expense-bug         ← 버그 수정
+├── refactor/supabase-query ← 리팩토링
+└── chore/env-setup         ← 설정 변경
+```
+
+### 브랜치 네이밍 규칙
+
+| prefix | 용도 | PR 대상 |
+|--------|------|---------|
+| `feature/` | 새 기능 개발 | `main` |
+| `fix/` | 버그 수정 | `main` |
+| `refactor/` | 리팩토링 | `main` |
+| `chore/` | 설정, 패키지, 문서 | `main` |
+
+### 규칙
+- 모든 작업은 `main`에서 브랜치를 파고 시작
+- 브랜치 수명은 짧게 유지 (1~3일 이내 merge 권장)
+- `main`에 직접 push 금지, 반드시 PR을 통해 merge
+- merge 완료 후 브랜치 즉시 삭제
+
+---
+
 ## 코딩 컨벤션
 - TypeScript strict 모드 사용
 - 컴포넌트: `src/components/` 하위 도메인별 폴더로 분리
