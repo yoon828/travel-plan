@@ -4,11 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, differenceInDays } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import { APIProvider } from '@vis.gl/react-google-maps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -18,53 +17,34 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react'
-import { addPlace, deletePlace, reorderPlaces, deleteTrip } from '@/app/actions'
+import { deletePlace, reorderPlaces, deleteTrip } from '@/app/actions'
 import type { Trip, Day, Place } from '@/types'
+import { PLACE_CATEGORIES, GOOGLE_MAPS_API_KEY } from '@/lib/googleMaps'
+import { AddPlaceForm } from './AddPlaceForm'
 
 interface TripDetailProps {
   trip: Trip & { days: (Day & { places: Place[] })[] }
 }
 
-interface FormState {
-  name: string
-  address: string
-  memo: string
-}
-
-export function TripDetail({ trip: initialTrip }: TripDetailProps) {
+function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
   const router = useRouter()
-  const [trip, setTrip] = useState(initialTrip)
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [formState, setFormState] = useState<FormState>({ name: '', address: '', memo: '' })
-  const [isLoading, setIsLoading] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [trip, setTrip] = useState<Trip & { days: (Day & { places: Place[] })[] }>(initialTrip)
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0)
+  const [showAddForm, setShowAddForm] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false)
 
   const startDate = new Date(trip.start_date)
   const endDate = new Date(trip.end_date)
   const tripDays = differenceInDays(endDate, startDate) + 1
   const selectedDay = trip.days[selectedDayIndex]
 
-  const handleAddPlace = async () => {
-    if (!formState.name.trim()) return
-
-    setIsLoading(true)
-    const result = await addPlace({
-      dayId: selectedDay.id,
-      name: formState.name,
-      address: formState.address || undefined,
-      memo: formState.memo || undefined,
-    })
-
-    if (result.place) {
-      const updatedDays = trip.days.map((day) =>
-        day.id === selectedDay.id ? { ...day, places: [...day.places, result.place!] } : day
-      )
-      setTrip({ ...trip, days: updatedDays })
-      setFormState({ name: '', address: '', memo: '' })
-      setShowAddForm(false)
-    }
-    setIsLoading(false)
+  const handlePlaceAdded = (newPlace: Place) => {
+    const updatedDays = trip.days.map((day) =>
+      day.id === selectedDay.id ? { ...day, places: [...day.places, newPlace] } : day
+    )
+    setTrip({ ...trip, days: updatedDays })
+    setShowAddForm(false)
   }
 
   const handleDeletePlace = async (placeId: string) => {
@@ -212,49 +192,12 @@ export function TripDetail({ trip: initialTrip }: TripDetailProps) {
             <CardContent className="space-y-4">
               {/* 장소 추가 폼 */}
               {showAddForm && (
-                <div className="border rounded-lg p-4 bg-muted/50 space-y-3">
-                  <div>
-                    <Input
-                      placeholder="장소 이름"
-                      value={formState.name}
-                      onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      placeholder="주소"
-                      value={formState.address}
-                      onChange={(e) => setFormState({ ...formState, address: e.target.value })}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div>
-                    <Textarea
-                      placeholder="메모"
-                      value={formState.memo}
-                      onChange={(e) => setFormState({ ...formState, memo: e.target.value })}
-                      rows={2}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleAddPlace}
-                      disabled={isLoading || !formState.name.trim()}
-                    >
-                      추가
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowAddForm(false)}
-                      disabled={isLoading}
-                    >
-                      취소
-                    </Button>
-                  </div>
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <AddPlaceForm
+                    dayId={selectedDay.id}
+                    onPlaceAdded={handlePlaceAdded}
+                    onCancel={() => setShowAddForm(false)}
+                  />
                 </div>
               )}
 
@@ -264,7 +207,15 @@ export function TripDetail({ trip: initialTrip }: TripDetailProps) {
                   {selectedDay.places.map((place, index) => (
                     <div key={place.id} className="border-l-4 border-primary pl-4 py-2 flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{place.name}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-lg">{place.name}</h3>
+                          {place.category && (
+                            <Badge variant="secondary">
+                              {PLACE_CATEGORIES.find((c) => c.value === place.category)?.icon}{' '}
+                              {PLACE_CATEGORIES.find((c) => c.value === place.category)?.label}
+                            </Badge>
+                          )}
+                        </div>
                         {place.address && (
                           <p className="text-sm text-muted-foreground">{place.address}</p>
                         )}
@@ -334,5 +285,13 @@ export function TripDetail({ trip: initialTrip }: TripDetailProps) {
         </Card>
       )}
     </div>
+  )
+}
+
+export function TripDetail(props: TripDetailProps) {
+  return (
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={['places']}>
+      <TripDetailContent {...props} />
+    </APIProvider>
   )
 }

@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils'
 
 export function CreateTripButton() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState<boolean>(false)
 
   return (
     <>
@@ -44,9 +44,9 @@ interface CreateTripModalProps {
 
 function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState<string>('')
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const handleSubmit = async (e: React.FormEvent) => {
