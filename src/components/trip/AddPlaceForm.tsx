@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { addPlace } from '@/app/actions'
+import { addPlace, updatePlace } from '@/app/actions'
 import type { Place, PlaceCategory, AutocompletePlaceResult } from '@/types'
 import { PLACE_CATEGORIES } from '@/lib/googleMaps'
 import { PlacesAutocompleteInput } from './PlacesAutocompleteInput'
@@ -13,6 +13,8 @@ interface AddPlaceFormProps {
   dayId: string
   onPlaceAdded: (place: Place) => void
   onCancel: () => void
+  editingPlace?: Place
+  onPlaceUpdated?: (place: Place) => void
 }
 
 interface PlaceFormData {
@@ -25,15 +27,16 @@ interface PlaceFormData {
   isManualInput: boolean
 }
 
-export function AddPlaceForm({ dayId, onPlaceAdded, onCancel }: AddPlaceFormProps) {
+export function AddPlaceForm({ dayId, onPlaceAdded, onCancel, editingPlace, onPlaceUpdated }: AddPlaceFormProps) {
+  const isEditMode = !!editingPlace
   const [formData, setFormData] = useState<PlaceFormData>({
-    name: '',
-    address: '',
-    memo: '',
-    lat: null,
-    lng: null,
-    category: null,
-    isManualInput: false,
+    name: editingPlace?.name ?? '',
+    address: editingPlace?.address ?? '',
+    memo: editingPlace?.memo ?? '',
+    lat: editingPlace?.lat ?? null,
+    lng: editingPlace?.lng ?? null,
+    category: (editingPlace?.category as PlaceCategory | null) ?? null,
+    isManualInput: isEditMode,
   })
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -75,23 +78,44 @@ export function AddPlaceForm({ dayId, onPlaceAdded, onCancel }: AddPlaceFormProp
     setIsLoading(true)
 
     try {
-      const result = await addPlace({
-        dayId,
-        name: formData.name,
-        address: formData.address || undefined,
-        memo: formData.memo || undefined,
-        lat: formData.lat ?? undefined,
-        lng: formData.lng ?? undefined,
-        category: formData.category || undefined,
-      })
+      if (isEditMode && editingPlace) {
+        const result = await updatePlace({
+          placeId: editingPlace.id,
+          name: formData.name,
+          address: formData.address || undefined,
+          memo: formData.memo || undefined,
+          lat: formData.lat ?? undefined,
+          lng: formData.lng ?? undefined,
+          category: formData.category || undefined,
+        })
 
-      if (result.error) {
-        alert(`장소 추가 실패: ${result.error}`)
-        return
-      }
+        if (result.error) {
+          alert(`장소 수정 실패: ${result.error}`)
+          return
+        }
 
-      if (result.place) {
-        onPlaceAdded(result.place)
+        if (result.place && onPlaceUpdated) {
+          onPlaceUpdated(result.place)
+        }
+      } else {
+        const result = await addPlace({
+          dayId,
+          name: formData.name,
+          address: formData.address || undefined,
+          memo: formData.memo || undefined,
+          lat: formData.lat ?? undefined,
+          lng: formData.lng ?? undefined,
+          category: formData.category || undefined,
+        })
+
+        if (result.error) {
+          alert(`장소 추가 실패: ${result.error}`)
+          return
+        }
+
+        if (result.place) {
+          onPlaceAdded(result.place)
+        }
       }
     } finally {
       setIsLoading(false)
@@ -141,22 +165,24 @@ export function AddPlaceForm({ dayId, onPlaceAdded, onCancel }: AddPlaceFormProp
               )}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() =>
-              setFormData((prev) => ({
-                ...prev,
-                isManualInput: true,
-                name: '',
-                address: '',
-                lat: null,
-                lng: null,
-              }))
-            }
-            className="text-xs text-muted-foreground underline hover:text-foreground"
-          >
-            장소가 없는 경우 직접 입력 →
-          </button>
+          {!isEditMode && (
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  isManualInput: true,
+                  name: '',
+                  address: '',
+                  lat: null,
+                  lng: null,
+                }))
+              }
+              className="text-xs text-muted-foreground underline hover:text-foreground"
+            >
+              장소가 없는 경우 직접 입력 →
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -181,20 +207,22 @@ export function AddPlaceForm({ dayId, onPlaceAdded, onCancel }: AddPlaceFormProp
             onChange={handleInputChange}
             disabled={isLoading}
           />
-          <button
-            type="button"
-            onClick={() =>
-              setFormData((prev) => ({
-                ...prev,
-                isManualInput: false,
-                name: '',
-                address: '',
-              }))
-            }
-            className="text-xs text-muted-foreground underline hover:text-foreground"
-          >
-            ← Google 검색으로 돌아가기
-          </button>
+          {!isEditMode && (
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  isManualInput: false,
+                  name: '',
+                  address: '',
+                }))
+              }
+              className="text-xs text-muted-foreground underline hover:text-foreground"
+            >
+              ← Google 검색으로 돌아가기
+            </button>
+          )}
         </div>
       )}
 
@@ -221,9 +249,9 @@ export function AddPlaceForm({ dayId, onPlaceAdded, onCancel }: AddPlaceFormProp
           disabled={isLoading || !formData.name.trim()}
           className="flex-1"
         >
-          {isLoading ? '추가 중...' : '추가'}
+          {isLoading ? (isEditMode ? '저장 중...' : '추가 중...') : (isEditMode ? '저장' : '추가')}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading} className="flex-1">
           취소
         </Button>
       </div>

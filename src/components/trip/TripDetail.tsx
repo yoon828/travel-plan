@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react'
+import { ChevronUp, ChevronDown, Trash2, Plus, Pencil } from 'lucide-react'
 import { deletePlace, reorderPlaces, deleteTrip } from '@/app/actions'
 import type { Trip, Day, Place } from '@/types'
 import { PLACE_CATEGORIES, GOOGLE_MAPS_API_KEY } from '@/lib/googleMaps'
@@ -31,6 +31,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
   const [trip, setTrip] = useState<Trip & { days: (Day & { places: Place[] })[] }>(initialTrip)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0)
   const [showAddForm, setShowAddForm] = useState<boolean>(false)
+  const [editingPlace, setEditingPlace] = useState<Place | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false)
 
@@ -45,6 +46,16 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
     )
     setTrip({ ...trip, days: updatedDays })
     setShowAddForm(false)
+  }
+
+  const handlePlaceUpdated = (updatedPlace: Place) => {
+    const updatedDays = trip.days.map((day) =>
+      day.id === selectedDay.id
+        ? { ...day, places: day.places.map((p) => (p.id === updatedPlace.id ? updatedPlace : p)) }
+        : day
+    )
+    setTrip({ ...trip, days: updatedDays })
+    setEditingPlace(null)
   }
 
   const handleDeletePlace = async (placeId: string) => {
@@ -182,7 +193,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowAddForm(!showAddForm)}
+                onClick={() => { setShowAddForm(!showAddForm); setEditingPlace(null) }}
                 disabled={isLoading}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -197,6 +208,20 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
                     dayId={selectedDay.id}
                     onPlaceAdded={handlePlaceAdded}
                     onCancel={() => setShowAddForm(false)}
+                  />
+                </div>
+              )}
+
+              {/* 장소 수정 폼 */}
+              {editingPlace && (
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <p className="text-sm font-medium mb-3">장소 수정</p>
+                  <AddPlaceForm
+                    dayId={selectedDay.id}
+                    onPlaceAdded={handlePlaceAdded}
+                    onCancel={() => setEditingPlace(null)}
+                    editingPlace={editingPlace}
+                    onPlaceUpdated={handlePlaceUpdated}
                   />
                 </div>
               )}
@@ -241,7 +266,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
                         )}
                       </div>
 
-                      {/* 순서 변경 및 삭제 버튼 */}
+                      {/* 순서 변경, 수정, 삭제 버튼 */}
                       <div className="flex gap-1 ml-4">
                         <Button
                           variant="ghost"
@@ -258,6 +283,14 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
                           disabled={isLoading || index === selectedDay.places.length - 1}
                         >
                           <ChevronDown className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setEditingPlace(place); setShowAddForm(false) }}
+                          disabled={isLoading}
+                        >
+                          <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
