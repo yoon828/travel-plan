@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ChevronUp, ChevronDown, Trash2, Plus, Pencil, X } from 'lucide-react'
+import { ChevronUp, ChevronDown, Trash2, Plus, Pencil, X, Map } from 'lucide-react'
 import { deletePlace, reorderPlaces, deleteTrip, addMember, removeMember } from '@/app/actions'
 import { Input } from '@/components/ui/input'
 import type { Trip, Day, Place, Member } from '@/types'
@@ -222,15 +222,26 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
             </div>
           </div>
         </div>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setShowDeleteDialog(true)}
-          disabled={isLoading}
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          삭제
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/trips/${trip.id}/route`)}
+            disabled={isLoading}
+          >
+            <Map className="w-4 h-4 mr-2" />
+            경로보기
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeleteDialog(true)}
+            disabled={isLoading}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            삭제
+          </Button>
+        </div>
       </div>
 
       {/* 삭제 확인 다이얼로그 */}
@@ -239,7 +250,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
           <DialogHeader>
             <DialogTitle>여행 삭제</DialogTitle>
             <DialogDescription>
-              정말로 "{trip.title}" 여행을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+              {`정말로 '${trip.title}' 여행을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

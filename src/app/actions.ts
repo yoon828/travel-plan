@@ -70,7 +70,15 @@ export async function getTrip(
       return { error: error.message }
     }
 
-    return { trip: data }
+    const trip = {
+      ...data,
+      days: data.days.map((day: Day & { places: Place[] }) => ({
+        ...day,
+        places: [...day.places].sort((a, b) => a.order_index - b.order_index),
+      })),
+    }
+
+    return { trip }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Unknown error' }
   }
