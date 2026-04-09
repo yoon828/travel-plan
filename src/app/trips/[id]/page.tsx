@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getTrip } from '@/app/actions'
+import { getTrip } from '@/app/actions/trips'
 import { TripDetail } from '@/components/trip/TripDetail'
 
 export default async function TripDetailPage({
