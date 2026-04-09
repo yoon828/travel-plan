@@ -28,7 +28,7 @@ export function PlaceItinerary({ places }: PlaceItineraryProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2">
-                      <span className="text-xl">{getCategoryIcon(place.category)}</span>
+                      <span className="text-xl">{getCategoryIcon(place.category ?? '')}</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-gray-900 truncate">
                           {place.name}
