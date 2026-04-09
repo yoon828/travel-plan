@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { ArrowLeft, Map } from 'lucide-react'
@@ -20,7 +20,7 @@ function RouteViewContent({ trip }: RouteViewProps) {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0)
 
   const selectedDay = trip.days[selectedDayIndex]
-  const selectedPlaces = selectedDay?.places || []
+  const selectedPlaces = useMemo(() => selectedDay?.places ?? [], [selectedDay])
 
   return (
     <div className="h-full flex flex-col bg-white">

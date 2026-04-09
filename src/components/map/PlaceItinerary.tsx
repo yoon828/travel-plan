@@ -1,5 +1,3 @@
-'use client'
-
 import { Place } from '@/types'
 import { PLACE_CATEGORIES } from '@/lib/googleMaps'
 

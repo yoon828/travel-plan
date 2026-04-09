@@ -1,7 +1,10 @@
 'use client'
 
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
+
 interface DaySelectorProps {
-  days: { day_number: number }[]
+  days: { day_number: number; date: string }[]
   selectedDayIndex: number
   onChange: (dayIndex: number) => void
 }
@@ -24,7 +27,10 @@ export function DaySelector({
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Day {day.day_number}
+            <div className="font-medium">Day {day.day_number}</div>
+            <div className="text-xs opacity-80">
+              {format(new Date(day.date), 'MM.dd', { locale: ko })}
+            </div>
           </button>
         ))}
       </div>

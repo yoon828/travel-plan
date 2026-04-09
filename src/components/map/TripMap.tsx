@@ -3,77 +3,73 @@
 import { useEffect } from 'react'
 import { Map, AdvancedMarker, Pin, Polyline, useMap } from '@vis.gl/react-google-maps'
 import { Place } from '@/types'
-import { MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from '@/lib/googleMaps'
+import { MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM, CATEGORY_COLORS } from '@/lib/googleMaps'
 
 interface TripMapProps {
   places: Place[]
 }
 
-function MapController({ places }: TripMapProps) {
+// validPlaces가 바뀔 때만 fitBounds 실행 (place IDs 기준 비교)
+function MapController({ validPlaces }: { validPlaces: Place[] }) {
   const map = useMap()
+  const placeIds = validPlaces.map((p) => p.id).join(',')
 
   useEffect(() => {
-    if (!map || places.length === 0) return
+    if (!map || validPlaces.length === 0) return
 
-    // 유효한 좌표를 가진 장소만 필터링
-    const validPlaces = places.filter((p) => p.lat !== null && p.lng !== null)
-    if (validPlaces.length === 0) return
-
-    // 모든 마커가 화면에 들어오도록 bounds 계산
     const bounds = new google.maps.LatLngBounds()
     validPlaces.forEach((place) => {
       bounds.extend({ lat: place.lat!, lng: place.lng! })
     })
-
-    // bounds에 맞춰 지도 조정
     map.fitBounds(bounds, 80)
-  }, [map, places])
+  // placeIds는 string이라 값 비교 → 장소 목록이 바뀔 때만 실행
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, placeIds])
 
   return null
 }
 
 export function TripMap({ places }: TripMapProps) {
-  // 유효한 좌표를 가진 장소만 필터링
   const validPlaces = places.filter((p) => p.lat !== null && p.lng !== null)
-
-  // Polyline 경로 생성
-  const path = validPlaces.map((place) => ({
-    lat: place.lat!,
-    lng: place.lng!,
-  }))
-
-  // 초기 지도 중심 (유효한 장소가 있으면 첫 번째, 없으면 기본값)
+  const path = validPlaces.map((place) => ({ lat: place.lat!, lng: place.lng! }))
   const initialCenter = validPlaces.length > 0 ? path[0] : MAP_DEFAULT_CENTER
 
   return (
-    <div className="flex-1 bg-white">
+    <div className="flex-1 relative bg-gray-100">
+      {validPlaces.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <p className="bg-white text-gray-500 text-sm px-4 py-2 rounded-lg shadow">
+            지도에 표시할 목적지가 없습니다
+          </p>
+        </div>
+      )}
       <Map
         defaultZoom={MAP_DEFAULT_ZOOM}
         defaultCenter={initialCenter}
         mapId="trip-route-map"
         className="w-full h-full"
       >
-        <MapController places={places} />
+        <MapController validPlaces={validPlaces} />
 
-        {/* 마커 표시 */}
-        {validPlaces.map((place, index) => (
-          <AdvancedMarker
-            key={place.id}
-            position={{ lat: place.lat!, lng: place.lng! }}
-            title={place.name}
-          >
-            <Pin
-              background="#4285F4"
-              borderColor="#fff"
-              glyphColor="#fff"
-              scale={1.2}
+        {validPlaces.map((place, index) => {
+          const markerColor = CATEGORY_COLORS[place.category ?? ''] ?? '#4285F4'
+          return (
+            <AdvancedMarker
+              key={place.id}
+              position={{ lat: place.lat!, lng: place.lng! }}
+              title={place.name}
             >
-              <span className="text-white font-bold text-sm">{index + 1}</span>
-            </Pin>
-          </AdvancedMarker>
-        ))}
+              <Pin
+                background={markerColor}
+                borderColor="#fff"
+                glyphColor="#fff"
+                glyph={String(index + 1)}
+                scale={1.2}
+              />
+            </AdvancedMarker>
+          )
+        })}
 
-        {/* Polyline 연결 */}
         {path.length > 1 && (
           <Polyline
             path={path}
