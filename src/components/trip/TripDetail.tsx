@@ -17,19 +17,21 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ChevronUp, ChevronDown, Trash2, Plus, Pencil, X, Map } from 'lucide-react'
-import { deletePlace, reorderPlaces, deleteTrip, addMember, removeMember } from '@/app/actions'
+import { deletePlace, reorderPlaces } from '@/app/actions/places'
+import { deleteTrip } from '@/app/actions/trips'
+import { addMember, removeMember } from '@/app/actions/members'
 import { Input } from '@/components/ui/input'
-import type { Trip, Day, Place, Member } from '@/types'
+import type { Trip, Day, Place, Member, Transport } from '@/types'
 import { PLACE_CATEGORIES, GOOGLE_MAPS_API_KEY } from '@/lib/googleMaps'
 import { AddPlaceForm } from './AddPlaceForm'
 
 interface TripDetailProps {
-  trip: Trip & { days: (Day & { places: Place[] })[]; members: Member[] }
+  trip: Trip & { days: (Day & { places: Place[]; transports: Transport[] })[]; members: Member[] }
 }
 
 function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
   const router = useRouter()
-  const [trip, setTrip] = useState<Trip & { days: (Day & { places: Place[] })[]; members: Member[] }>(initialTrip)
+  const [trip, setTrip] = useState<Trip & { days: (Day & { places: Place[]; transports: Transport[] })[]; members: Member[] }>(initialTrip)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0)
   const [showAddForm, setShowAddForm] = useState<boolean>(false)
   const [editingPlace, setEditingPlace] = useState<Place | null>(null)
@@ -45,7 +47,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
 
   const handlePlaceAdded = (newPlace: Place) => {
     const updatedDays = trip.days.map((day) =>
-      day.id === selectedDay.id ? { ...day, places: [...day.places, newPlace] } : day
+      day.id === selectedDay.id ? { ...day, places: [...day.places, newPlace], transports: day.transports || [] } : day
     )
     setTrip({ ...trip, days: updatedDays })
     setShowAddForm(false)
@@ -54,7 +56,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
   const handlePlaceUpdated = (updatedPlace: Place) => {
     const updatedDays = trip.days.map((day) =>
       day.id === selectedDay.id
-        ? { ...day, places: day.places.map((p) => (p.id === updatedPlace.id ? updatedPlace : p)) }
+        ? { ...day, places: day.places.map((p) => (p.id === updatedPlace.id ? updatedPlace : p)), transports: day.transports || [] }
         : day
     )
     setTrip({ ...trip, days: updatedDays })
@@ -68,7 +70,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
     if (result.success) {
       const updatedDays = trip.days.map((day) =>
         day.id === selectedDay.id
-          ? { ...day, places: day.places.filter((p) => p.id !== placeId) }
+          ? { ...day, places: day.places.filter((p) => p.id !== placeId), transports: day.transports || [] }
           : day
       )
       setTrip({ ...trip, days: updatedDays })
@@ -97,7 +99,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
 
     if (result.success) {
       const updatedDays = trip.days.map((day) =>
-        day.id === selectedDay.id ? { ...day, places: newPlaces } : day
+        day.id === selectedDay.id ? { ...day, places: newPlaces, transports: day.transports || [] } : day
       )
       setTrip({ ...trip, days: updatedDays })
     }
@@ -226,7 +228,7 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/trips/${trip.id}/route`)}
+            onClick={() => router.push(`/trips/${trip.id}/map`)}
             disabled={isLoading}
           >
             <Map className="w-4 h-4 mr-2" />
@@ -340,77 +342,80 @@ function TripDetailContent({ trip: initialTrip }: TripDetailProps) {
               {selectedDay.places.length > 0 ? (
                 <div className="space-y-3">
                   {selectedDay.places.map((place, index) => (
-                    <div key={place.id} className="border-l-4 border-primary pl-4 py-2 flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-lg">{place.name}</h3>
-                          {place.category && (
-                            <Badge variant="secondary">
-                              {PLACE_CATEGORIES.find((c) => c.value === place.category)?.icon}{' '}
-                              {PLACE_CATEGORIES.find((c) => c.value === place.category)?.label}
+                    <div key={place.id}>
+                      <div className="border-l-4 border-primary pl-4 py-2 flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-lg">{place.name}</h3>
+                            {place.category && (
+                              <Badge variant="secondary">
+                                {PLACE_CATEGORIES.find((c) => c.value === place.category)?.icon}{' '}
+                                {PLACE_CATEGORIES.find((c) => c.value === place.category)?.label}
+                              </Badge>
+                            )}
+                          </div>
+                          {place.address && (
+                            <p className="text-sm text-muted-foreground">{place.address}</p>
+                          )}
+                          {place.memo && (
+                            <p className="text-sm mt-2">{place.memo}</p>
+                          )}
+                          {place.open_hours && (
+                            <Badge variant="secondary" className="mt-2">
+                              {place.open_hours}
                             </Badge>
                           )}
+                          {place.ticket_url && (
+                            <div className="mt-2">
+                              <a
+                                href={place.ticket_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline"
+                              >
+                                티켓 보기 →
+                              </a>
+                            </div>
+                          )}
                         </div>
-                        {place.address && (
-                          <p className="text-sm text-muted-foreground">{place.address}</p>
-                        )}
-                        {place.memo && (
-                          <p className="text-sm mt-2">{place.memo}</p>
-                        )}
-                        {place.open_hours && (
-                          <Badge variant="secondary" className="mt-2">
-                            {place.open_hours}
-                          </Badge>
-                        )}
-                        {place.ticket_url && (
-                          <div className="mt-2">
-                            <a
-                              href={place.ticket_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline"
-                            >
-                              티켓 보기 →
-                            </a>
-                          </div>
-                        )}
+
+                        {/* 순서 변경, 수정, 삭제 버튼 */}
+                        <div className="flex gap-1 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMovePlace(place.id, 'up')}
+                            disabled={isLoading || index === 0}
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMovePlace(place.id, 'down')}
+                            disabled={isLoading || index === selectedDay.places.length - 1}
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setEditingPlace(place); setShowAddForm(false) }}
+                            disabled={isLoading}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePlace(place.id)}
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
 
-                      {/* 순서 변경, 수정, 삭제 버튼 */}
-                      <div className="flex gap-1 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMovePlace(place.id, 'up')}
-                          disabled={isLoading || index === 0}
-                        >
-                          <ChevronUp className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMovePlace(place.id, 'down')}
-                          disabled={isLoading || index === selectedDay.places.length - 1}
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setEditingPlace(place); setShowAddForm(false) }}
-                          disabled={isLoading}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeletePlace(place.id)}
-                          disabled={isLoading}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
                     </div>
                   ))}
                 </div>

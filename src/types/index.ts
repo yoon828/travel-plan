@@ -18,6 +18,8 @@ export interface Day {
   trip_id: string
   day_number: number
   date: string
+  places?: Place[]
+  transports?: Transport[]
 }
 
 export type PlaceCategory = 'restaurant' | 'cafe' | 'attraction' | 'accommodation' | 'airport'
@@ -44,7 +46,7 @@ export interface Place {
   category: PlaceCategory | null
 }
 
-export type TransportMode = 'transit' | 'driving' | 'walking' | 'train'
+export type TransportMode = 'transit' | 'driving' | 'walking'
 
 export interface Transport {
   id: string

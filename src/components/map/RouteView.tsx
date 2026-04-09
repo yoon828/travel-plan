@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { ArrowLeft, Map } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Trip, Day, Place } from '@/types'
+import type { Trip, Day, Place, Transport } from '@/types'
 import { GOOGLE_MAPS_API_KEY } from '@/lib/googleMaps'
 import { DaySelector } from './DaySelector'
 import { PlaceItinerary } from './PlaceItinerary'
 import { TripMap } from './TripMap'
 
 interface RouteViewProps {
-  trip: Trip & { days: (Day & { places: Place[] })[] }
+  trip: Trip & { days: (Day & { places: Place[]; transports: Transport[] })[] }
 }
 
 function RouteViewContent({ trip }: RouteViewProps) {
@@ -21,6 +21,7 @@ function RouteViewContent({ trip }: RouteViewProps) {
 
   const selectedDay = trip.days[selectedDayIndex]
   const selectedPlaces = useMemo(() => selectedDay?.places ?? [], [selectedDay])
+  const selectedTransports = useMemo(() => selectedDay?.transports ?? [], [selectedDay])
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -54,7 +55,7 @@ function RouteViewContent({ trip }: RouteViewProps) {
 
       {/* 본문: 목록 + 지도 */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        <PlaceItinerary places={selectedPlaces} />
+        <PlaceItinerary places={selectedPlaces} transports={selectedTransports} />
         <TripMap places={selectedPlaces} />
       </div>
     </div>
