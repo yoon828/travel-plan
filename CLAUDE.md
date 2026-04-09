@@ -36,16 +36,21 @@ src/
 ├── app/                  # Next.js App Router 페이지
 │   ├── page.tsx          # 메인 (여행 목록)
 │   ├── trips/
-│   │   └── [id]/         # 여행 상세 페이지 (새 여행 만들기는 사이드바 모달)
+│   │   └── [id]/         # 여행 상세 페이지
+│   │       └── route/    # 경로 시각화 페이지 (/trips/[id]/route)
 ├── components/           # 재사용 컴포넌트
 │   ├── trip/             # 일정 관련
-│   ├── map/              # 지도 관련
+│   ├── map/              # 지도/경로 관련
+│   │   ├── RouteView.tsx      # 경로 페이지 최상위 (APIProvider + 레이아웃)
+│   │   ├── TripMap.tsx        # 지도 렌더링 (Marker + Polyline)
+│   │   ├── DaySelector.tsx    # Day 탭 선택 UI
+│   │   └── PlaceItinerary.tsx # 목적지 순서 목록 패널
 │   ├── budget/           # 예산 관련
 │   └── common/           # 공통 UI
 ├── lib/
 │   ├── supabase.ts       # 서버 컴포넌트용 Supabase 클라이언트
 │   ├── supabase.client.ts # 클라이언트 컴포넌트용 Supabase 클라이언트
-│   └── googleMaps.ts     # Google Maps 유틸
+│   └── googleMaps.ts     # Google Maps 유틸 (API 키, 색상 상수 등)
 ├── types/                # TypeScript 타입 정의
 └── hooks/                # 커스텀 훅
 ```
@@ -190,7 +195,8 @@ create table expenses (
 - [x] 프로젝트 초기 세팅 (Next.js + Supabase 연결)
 - [x] DB 스키마 적용 (모든 테이블 생성 완료)
 - [x] 여행 생성 폼 (제목, 날짜 입력 기능 완료)
-  - [ ] 멤버 등록 기능 추가 필요
+  - [x] 멤버 등록 기능 추가 필요
+  - [ ] 오른쪽에 확정 버튼을 눌러서 멤버를 더이상 수정할 수 없도록 기능 추가 
 - [x] 여행 목록 조회 UI (사이드바에서 구현)
 - [x] 여행 상세 페이지
 - [ ] 여행 하는 나라의 화폐 단위를 입력 받아서 실시간 환율 정보 제공
@@ -199,11 +205,11 @@ create table expenses (
   - [x] 목적지는 google map에서 검색해서 검색된 장소 이름으로 등록 (기본)
   - [x] google map에 장소가 없는 경우에만 일반 텍스트로 입력 받아서 등록
   - [x] 목적지 수정
-- [ ] Google Maps에 경로 시각화
-  - [ ] 경로는 상세 페이지에서 바로 보이는게 아닌, "경로보기" 라는 버튼이나 탭을 누르면 경로 페이지로 이동
-  - [ ] 각 목적지마다 마커 표기 및 선으로 연결해서 보여주기
-  - [ ] 경로를 시각화하기 위해서 google maps가 아닌 다른 패키지 및 도구 제안 가능
-  - [ ] 지도 옆에는 목적지 순서 표기 
+- [x] Google Maps에 경로 시각화
+  - [x] 경로는 상세 페이지에서 바로 보이는게 아닌, "경로보기" 버튼을 누르면 `/trips/[id]/route` 경로 페이지로 이동
+  - [x] 각 목적지마다 마커 표기 및 Polyline으로 연결해서 보여주기
+  - [x] 지도 옆에 목적지 순서 표기 (PlaceItinerary 패널)
+  - [x] @vis.gl/react-google-maps 기존 라이브러리 유지 (Google Directions API 연동 고려)
 - [ ] 이동 수단별 소요 시간 / 비용 표시
   - [ ] 대중교통, 자가용, 도보 case 존재
   - [ ] 대중교통을 이용하는 경우에만 비용 표기 
